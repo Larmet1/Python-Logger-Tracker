@@ -1,0 +1,84 @@
+
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Звіт сесії Python</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h2 { color: #333; }
+            .event, .error { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px; }
+            .успіх { background-color: #e0f7e0; }
+            .помилка { background-color: #f8d7da; }
+            pre { background-color: #f4f4f4; padding: 10px; overflow-x: auto; }
+            .рядок-коду { background-color: #f0f0f0; padding: 2px 5px; display:block; }
+            .рядок-помилки { background-color: #ffdddd; }
+        </style>
+    </head>
+    <body>
+        <h1>Звіт сесії Python</h1>
+        <p><strong>Початок сесії:</strong> 2025-09-14 14:20:54.090063</p>
+        <h2>Події</h2>
+    
+        <div class="event успіх">
+            <p><strong>Крок:</strong> 1</p>
+            <p><strong>Функція:</strong> add</p>
+            <p><strong>Аргументи:</strong> (5, 6)</p>
+            <p><strong>Ключові аргументи:</strong> {}</p>
+            <p><strong>Час:</strong> 2025-09-14 14:20:54.090112</p>
+            <p><strong>Статус:</strong> успіх</p>
+            <p><strong>Результат:</strong> 11</p>
+        </div>
+        
+        <div class="event успіх">
+            <p><strong>Крок:</strong> 2</p>
+            <p><strong>Функція:</strong> minus</p>
+            <p><strong>Аргументи:</strong> (5, 2)</p>
+            <p><strong>Ключові аргументи:</strong> {}</p>
+            <p><strong>Час:</strong> 2025-09-14 14:20:54.090334</p>
+            <p><strong>Статус:</strong> успіх</p>
+            <p><strong>Результат:</strong> 3</p>
+        </div>
+        
+        <div class="event успіх">
+            <p><strong>Крок:</strong> 3</p>
+            <p><strong>Функція:</strong> multiply</p>
+            <p><strong>Аргументи:</strong> (2, 10)</p>
+            <p><strong>Ключові аргументи:</strong> {}</p>
+            <p><strong>Час:</strong> 2025-09-14 14:20:54.090492</p>
+            <p><strong>Статус:</strong> успіх</p>
+            <p><strong>Результат:</strong> 20</p>
+        </div>
+        
+        <div class="event помилка">
+            <p><strong>Крок:</strong> 4</p>
+            <p><strong>Функція:</strong> divide</p>
+            <p><strong>Аргументи:</strong> (5, 0)</p>
+            <p><strong>Ключові аргументи:</strong> {}</p>
+            <p><strong>Час:</strong> 2025-09-14 14:20:54.090641</p>
+            <p><strong>Статус:</strong> помилка</p>
+            <p><strong>Результат:</strong> None</p>
+        </div>
+        
+        <h2>Помилка</h2>
+        <div class="error">
+            <p><strong>Тип:</strong> ZeroDivisionError</p>
+            <p><strong>Повідомлення:</strong> division by zero</p>
+            <p><strong>Файл:</strong> e:\Python-Logger-Tracker\main.py</p>
+            <p><strong>Рядок:</strong> 18</p>
+            <p><strong>Функція:</strong> divide</p>
+            <p><strong>Крок:</strong> 4</p>
+            <p><strong>Час:</strong> 2025-09-14 14:20:54.096819</p>
+            <h3>Локальні змінні:</h3>
+            <pre>{'a': '5', 'b': '0'}</pre>
+            <h3>Traceback:</h3>
+            <pre>Traceback (most recent call last):
+  File "e:\Python-Logger-Tracker\logger_setup.py", line 35, in wrapper
+    result = func(*args, **kwargs)
+  File "e:\Python-Logger-Tracker\main.py", line 18, in divide
+    return a / b
+           ~~^~~
+ZeroDivisionError: division by zero
+</pre>
+            <h3>Фрагмент коду навколо помилки:</h3>
+            <pre>
+        <span class="рядок-коду ">15: </span><span class="рядок-коду ">16: @log_function</span><span class="рядок-коду ">17: def divide(a, b):</span><span class="рядок-коду рядок-помилки">18:     return a / b</span><span class="рядок-коду ">19: </span><span class="рядок-коду ">20: # ! ===================== Виклики функцій =====================</span><span class="рядок-коду ">21: if __name__ == "__main__":</span></pre></div></body></html>
