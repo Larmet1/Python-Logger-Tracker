@@ -5,7 +5,7 @@ import traceback
 import sys
 import linecache
 
-# ===================== Налаштування логів =====================
+# TODO ===================== Налаштування логів =====================
 logs_folder = Path("logs")
 logs_folder.mkdir(parents=True, exist_ok=True)
 
@@ -16,7 +16,7 @@ session_log = {
     "помилка": None
 }
 
-# ===================== Декоратор для логування =====================
+# TODO ===================== Декоратор для логування =====================
 def log_function(func):
     def wrapper(*args, **kwargs):
         step = len(session_log["події"]) + 1
@@ -44,12 +44,12 @@ def log_function(func):
             raise
     return wrapper
 
-# ===================== Логування винятків =====================
+# TODO ===================== Логування винятків =====================
 def log_exception(e: Exception, event_info=None):
     exc_type, exc_value, exc_tb = sys.exc_info()
     tb_str = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
 
-    # Отримуємо останній фрейм
+    # TODO Отримуємо останній фрейм
     last_tb = exc_tb
     while last_tb.tb_next:
         last_tb = last_tb.tb_next
@@ -58,7 +58,7 @@ def log_exception(e: Exception, event_info=None):
     filename = frame.f_code.co_filename
     locals_vars = {k: repr(v) for k, v in frame.f_locals.items()}
 
-    # Фрагмент коду навколо помилки
+    # TODO Фрагмент коду навколо помилки
     start = max(1, lineno - 3)
     end = lineno + 3
     code_fragment = []
@@ -83,7 +83,7 @@ def log_exception(e: Exception, event_info=None):
         "час": str(datetime.datetime.now())
     }
 
-    # Зберегти JSON
+    # TODO Зберегти JSON
     json_filename = logs_folder / f"звіт_помилки_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     with open(json_filename, "w", encoding="utf-8") as f:
         json.dump(session_log, f, indent=4, ensure_ascii=False)
@@ -92,7 +92,7 @@ def log_exception(e: Exception, event_info=None):
     html_filename = logs_folder / f"звіт_помилки_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
     generate_html_report(session_log, html_filename, exc_tb)
 
-# ===================== Генерація HTML =====================
+# TODO ===================== Генерація HTML =====================
 def generate_html_report(data, html_filename, tb=None):
     html_content = f"""
     <html>
