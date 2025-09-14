@@ -1,27 +1,29 @@
+from loguru import logger
 import json
-import traceback
-import sys
 import datetime
 from pathlib import Path
+import traceback
+import sys
+import linecache
 
-# * Глобальний журнал сеансу
+# ===================== Налаштування loguru =====================
+logs_folder = Path("logs")
+logs_folder.mkdir(parents=True, exist_ok=True)
+logger.add(str(logs_folder / "app_{time:YYYYMMDD_HHmmss}.log"), rotation="1 MB", backtrace=True, diagnose=True, encoding="utf-8")
+
+# * Глобальний журнал сесії
 session_log = {
     "початок_сесії": str(datetime.datetime.now()),
     "події": [],
     "помилка": None
 }
 
-#  * Згенерувати унікальне ім'я файлу на основі позначки часу в папці logs
-def get_unique_filename(base_name, ext="html", folder="logs"):
-    Path(folder).mkdir(parents=True, exist_ok=True)  # створює папку, якщо її немає
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    return str(Path(folder) / f"{base_name}_{timestamp}.{ext}")
-
-#  * Декоратор для логування функцій
+# ===================== Декоратор для логування =====================
 def log_function(func):
     def wrapper(*args, **kwargs):
+        step = len(session_log["події"]) + 1
         event = {
-            "крок": len(session_log["події"]) + 1,
+            "крок": step,
             "функція": func.__name__,
             "аргументи": args,
             "ключові_аргументи": kwargs,
@@ -30,22 +32,25 @@ def log_function(func):
             "результат": None
         }
         session_log["події"].append(event)
+        logger.info(f"Крок {step} - Функція '{func.__name__}' запущена з аргументами {args}, {kwargs}")
         try:
             result = func(*args, **kwargs)
             event["статус"] = "успіх"
             event["результат"] = result
+            logger.success(f"Крок {step} - Функція '{func.__name__}' успішно виконана: {result}")
             return result
         except Exception as e:
             event["статус"] = "помилка"
             log_exception(e, event)
+            logger.exception(f"Крок {step} - Функція '{func.__name__}' завершилася помилкою")
             raise
     return wrapper
 
-# * Функція для логування винятків
+# ===================== Логування винятків =====================
 def log_exception(e: Exception, event_info=None):
     exc_type, exc_value, exc_tb = sys.exc_info()
     tb_str = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
-    
+
     session_log["помилка"] = {
         "тип": str(type(e).__name__),
         "повідомлення": str(e),
@@ -54,30 +59,32 @@ def log_exception(e: Exception, event_info=None):
         "крок": event_info["крок"] if event_info else None,
         "час": str(datetime.datetime.now())
     }
-    
-    # * Зберегти звіт JSON
-    json_filename = get_unique_filename("звіт_помилки", "json")
+
+    # Зберегти JSON
+    json_filename = logs_folder / f"звіт_помилки_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     with open(json_filename, "w", encoding="utf-8") as f:
         json.dump(session_log, f, indent=4, ensure_ascii=False)
-    
-    # * Згенерувати HTML-звіт
-    html_filename = get_unique_filename("звіт_помилки", "html")
-    generate_html_report(session_log, html_filename)
 
-    # * Функція для генерації HTML з даних JSON
-def generate_html_report(data, html_filename):
+    # Згенерувати HTML
+    html_filename = logs_folder / f"звіт_помилки_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.html"
+    generate_html_report(session_log, html_filename, exc_tb)
+
+# ===================== Генерація HTML =====================
+def generate_html_report(data, html_filename, tb=None):
     html_content = f"""
     <html>
     <head>
         <meta charset="utf-8">
-        <title>Звіт Python</title>
+        <title>Звіт сесії Python</title>
         <style>
             body {{ font-family: Arial, sans-serif; margin: 20px; }}
-            h1, h2 {{ color: #333; }}
+            h2 {{ color: #333; }}
             .event, .error {{ border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 5px; }}
             .успіх {{ background-color: #e0f7e0; }}
             .помилка {{ background-color: #f8d7da; }}
             pre {{ background-color: #f4f4f4; padding: 10px; overflow-x: auto; }}
+            .рядок-коду {{ background-color: #f0f0f0; padding: 2px 5px; display:block; }}
+            .рядок-помилки {{ background-color: #ffdddd; }}
         </style>
     </head>
     <body>
@@ -98,50 +105,67 @@ def generate_html_report(data, html_filename):
             <p><strong>Результат:</strong> {event['результат']}</p>
         </div>
         """
+    
     if data["помилка"]:
         html_content += f"""
         <h2>Помилка</h2>
         <div class="error">
             <p><strong>Тип:</strong> {data['помилка']['тип']}</p>
             <p><strong>Повідомлення:</strong> {data['помилка']['повідомлення']}</p>
-            <p><strong>У функції:</strong> {data['помилка']['у_якій_функції']}</p>
+            <p><strong>Функція:</strong> {data['помилка']['у_якій_функції']}</p>
             <p><strong>Крок:</strong> {data['помилка']['крок']}</p>
             <p><strong>Час:</strong> {data['помилка']['час']}</p>
+            <h3>Traceback:</h3>
             <pre>{data['помилка']['traceback']}</pre>
-        </div>
         """
+
+        # Показати код навколо помилки
+        if tb:
+            last_tb = tb
+            while last_tb.tb_next:
+                last_tb = last_tb.tb_next
+            filename = last_tb.tb_frame.f_code.co_filename
+            lineno = last_tb.tb_lineno
+            html_content += f"<h3>Фрагмент коду навколо помилки: {filename}:{lineno}</h3><pre>"
+            start = max(1, lineno - 3)
+            end = lineno + 3
+            for i in range(start, end + 1):
+                line = linecache.getline(filename, i)
+                if i == lineno:
+                    html_content += f'<span class="рядок-коду рядок-помилки">{i}: {line.rstrip()}</span>'
+                else:
+                    html_content += f'<span class="рядок-коду">{i}: {line.rstrip()}</span>'
+            html_content += "</pre>"
+
+        html_content += "</div>"
+    
     html_content += "</body></html>"
     
     with open(html_filename, "w", encoding="utf-8") as f:
         f.write(html_content)
 
-
-
-# ? =============================== Ввід функцій ====================================================
-
-# ! Вставити сюди функції для логування
+# ===================== Функції для логування =====================
+@log_function
+def add(a, b):
+    return a + b
 
 @log_function
-def binary_search(arr, target):
-    left, right = 0, len(arr) - 1
-    while left <= right:
-        mid = (left + right) // 2
-        if arr[mid] == target:
-            return mid
-        elif arr[mid] < target:
-            left = mid + 1
-        else:
-            right = mid - 1
-    raise ValueError(f"Елемент {target} не знайдено")
+def minus(a, b):
+    return a - b
 
-# * Використання
+@log_function
+def multiply(a, b):
+    return a * b
+
+@log_function
+def divide(a, b):
+    return a / b
+
+# ===================== Використання =====================
 try:
-    numbers = [1, 3, 5, 7, 9, 11]
-    # * Успішний пошук
-    binary_search(numbers, 7)
-    # ! Пошук з помилкою
-    binary_search(numbers, 4)
-
+    add(5, 6)
+    minus(5, 2)
+    multiply(2, 10)
+    divide(5, 0)  # <- викличе помилку ZeroDivisionError
 except Exception:
-    print("Сталася помилка, звіт JSON та HTML збережено з унікальними іменами файлів")
-
+    print("Сталася помилка, звіт JSON та HTML збережено в папці logs")
